@@ -17,6 +17,7 @@ def main():
     qtde_os = st.Page("pages/qtde_os.py", title="Quantidade de O.S.", icon="📊")
 
     # 2. Configurar a navegação passando a lista de páginas
+    pg = st.logo("images/Logo-Totale.png")
     pg = st.navigation([home_page, envio_excel, ranking_pontos, qtde_os])
 
     pg.run()

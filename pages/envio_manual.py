@@ -23,3 +23,5 @@ if arquivo_enviado is not None:
         
     except Exception as e:
         st.error(f"Erro ao ler o arquivo: {e}")
+
+# Comentário
