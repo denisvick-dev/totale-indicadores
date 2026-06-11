@@ -3,12 +3,12 @@ import pandas as pd
 from datetime import datetime
 
 st.set_page_config(
-    page_title="Painel de Dados",
+    page_title="Carregamento Excel",
     page_icon="📊",
     layout="wide"
 )
 
-st.title("📊 Painel de Dados")
+st.title("📊 Carregamento Excel")
 
 ID_PLANILHA = "11Dp9WdZYUrT_LBvfo07Mi8muKXZykU7v"
 
