@@ -8,27 +8,28 @@ from io import BytesIO
 # =========================================
 
 st.set_page_config(
-    page_title="Quantidade de OS",
+    page_title="Quantidade de O.S.",
     page_icon="📊",
     layout="wide"
 )
 
-st.title("📊 Quantidade de OS")
-
-# Validar se o arquivo existe no session_state antes de prosseguir
-if "df_producao" not in st.session_state or st.session_state["df_producao"] is None:
-    st.warning("⚠️ Nenhum dado encontrado. Por favor, faça o upload dos dados na página inicial.")
-    st.stop()
+st.title("📊 Quantidade de O.S.")
 
 # =========================================
 # LEITURA E TRATAMENTO DAS ABAS
 # =========================================
 
-arquivo_excel = st.session_state["df_producao"]
+if "dados" not in st.session_state:
+
+    st.warning("Carregue os dados na página principal primeiro.")
+    st.stop()
+
+dados = st.session_state["dados"]
+
 try:
-    prod = pd.read_excel(arquivo_excel, sheet_name='Prod')
-except Exception as e:
-    st.error(f"Erro ao ler o arquivo Excel: {e}")
+    prod = dados["Prod"].copy()
+except KeyError as erro:
+    st.error(f"Aba não encontrada: {erro}")
     st.stop()
 
 total_os = len(prod)

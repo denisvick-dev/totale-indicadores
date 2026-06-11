@@ -15,24 +15,22 @@ st.set_page_config(
 
 st.title("🏆 Ranking Geral de Pontos")
 
-# Validar se o arquivo existe no session_state antes de prosseguir
-if "df_producao" not in st.session_state or st.session_state["df_producao"] is None:
-    st.warning("⚠️ Nenhum dado encontrado. Por favor, faça o upload dos dados na página inicial.")
-    st.stop()
-
 # =========================================
 # LEITURA E TRATAMENTO DAS ABAS
 # =========================================
 
-# Considerando que st.session_state["df_producao"] seja o arquivo bruto (Upload)
-arquivo_excel = st.session_state["df_producao"]
+if "dados" not in st.session_state:
+
+    st.warning("Carregue os dados na página principal primeiro.")
+    st.stop()
+
+dados = st.session_state["dados"]
 
 try:
-    # Lendo as abas específicas do mesmo arquivo
-    prod = pd.read_excel(arquivo_excel, sheet_name='Prod')
-    gpon = pd.read_excel(arquivo_excel, sheet_name='Gpon')
-except Exception as e:
-    st.error(f"Erro ao ler as abas 'Prod' ou 'Gpon'. Certifique-se de que os nomes estão corretos. Erro: {e}")
+    prod = dados["Prod"].copy()
+    gpon = dados["Gpon"].copy()
+except KeyError as erro:
+    st.error(f"Aba não encontrada: {erro}")
     st.stop()
 
 # Tratamento dos pontos individualmente antes de juntar
