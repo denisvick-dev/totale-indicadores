@@ -96,5 +96,3 @@ with col2:
       width=300,
       hide_index=True
    )
-
-# Comentário

@@ -189,5 +189,3 @@ if not ranking.empty:
         file_name="ranking_geral.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-
-# Comentário
