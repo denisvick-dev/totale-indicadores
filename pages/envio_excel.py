@@ -1,33 +1,81 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 
-st.title("Painel de Dados - Atualizado via Computador")
+st.set_page_config(
+    page_title="Painel de Dados",
+    page_icon="📊",
+    layout="wide"
+)
 
-# Substitua pelo ID do seu arquivo do Google Drive
-ID_ARQUIVO_DRIVE = "113598490206552656776"  # Exemplo: "1a2b3c4d5e6f7g8h9i0j"
-URL_EXPORTACAO = f"https://docs.google.com{ID_ARQUIVO_DRIVE}/export?format=xlsx"
+st.title("📊 Painel de Dados")
 
-# O parâmetro 'ttl' garante que o Streamlit busque o arquivo na nuvem novamente a cada 5 minutos
-@st.cache_data(ttl=300) 
-def carregar_dados_nuvem():
+ID_PLANILHA = "11Dp9WdZYUrT_LBvfo07Mi8muKXZykU7v"
+
+URL_EXPORTACAO = (
+    f"https://docs.google.com/spreadsheets/d/"
+    f"{ID_PLANILHA}/export?format=xlsx"
+)
+
+# Inicializa Session State
+if "df_producao" not in st.session_state:
+    st.session_state["df_producao"] = None
+
+@st.cache_data(ttl=300)
+def carregar_producao():
+    return pd.read_excel(
+        URL_EXPORTACAO,
+        engine="openpyxl"
+    )
+
+
+def atualizar_dados():
     try:
-        # Lê o arquivo Excel diretamente da URL de exportação pública
-        df = pd.read_excel(URL_EXPORTACAO)
-        return df
-    except Exception as e:
-        st.error(f"Erro ao conectar com o Google Drive: {e}")
-        return pd.DataFrame()
+        st.session_state["df_producao"] = carregar_producao()
 
-# Carrega e exibe os dados
-dados = carregar_dados_nuvem()
+    except Exception as erro:
+        st.error(f"Erro ao carregar dados: {erro}")
 
-if not dados.empty:
-    st.success("Dados carregados com sucesso da nuvem!")
-    st.dataframe(dados)
+# Primeira carga
+if st.session_state.dados is None:
+    atualizar_dados()
+
+# Botão de atualização
+if st.button("🔄 Atualizar Dados"):
+    carregar_producao.clear()
+    atualizar_dados()
+
+dados = st.session_state.dados
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.metric(
+        "Total Registros",
+        len(dados) if dados is not None else 0
+    )
+
+with col2:
+    st.metric(
+        "Total Colunas",
+        len(dados.columns) if dados is not None else 0
+    )
+
+with col3:
+    st.metric(
+        "Última Atualização",
+        st.session_state.ultima_atualizacao.strftime("%H:%M:%S")
+        if st.session_state.ultima_atualizacao
+        else "-"
+    )
+
+st.divider()
+
+if dados is not None and not dados.empty:
+    st.dataframe(
+        dados,
+        use_container_width=True,
+        hide_index=True
+    )
 else:
-    st.warning("Aguardando conexão ou arquivo vazio.")
-
-# Botão para o usuário forçar a atualização imediata na tela
-if st.button("Recarregar Dados Agora"):
-    st.cache_data.clear()
-    st.rerun()
+    st.warning("Nenhum dado encontrado.")
