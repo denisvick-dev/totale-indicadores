@@ -8,6 +8,7 @@ st.set_page_config(
 )
 
 def main():
+    st.image("images/Logo-Totale.png", width=200)
     st.title("Seja bem-vindo aos painéis de Produção TOTALE 🚀")
 
     home_page = st.Page("pages/app.py", title="Home", icon="🏠", default=True)
