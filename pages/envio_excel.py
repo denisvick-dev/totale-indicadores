@@ -1,105 +1,33 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
 
-st.set_page_config(
-    page_title="Carregamento Excel",
-    page_icon="📊",
-    layout="wide"
-)
+st.title("Painel de Dados - Atualizado via Computador")
 
-st.title("📊 Carregamento Excel")
+# Substitua pelo ID do seu arquivo do Google Drive
+ID_ARQUIVO_DRIVE = "113598490206552656776"  # Exemplo: "1a2b3c4d5e6f7g8h9i0j"
+URL_EXPORTACAO = f"https://docs.google.com{ID_ARQUIVO_DRIVE}/export?format=xlsx"
 
-ID_PLANILHA = "11Dp9WdZYUrT_LBvfo07Mi8muKXZykU7v"
-
-URL_EXPORTACAO = (
-    f"https://docs.google.com/spreadsheets/d/"
-    f"{ID_PLANILHA}/export?format=xlsx"
-)
-
-# -----------------------------
-# Session State
-# -----------------------------
-if "dados" not in st.session_state:
-    st.session_state["dados"] = None
-
-if "ultima_atualizacao" not in st.session_state:
-    st.session_state["ultima_atualizacao"] = None
-
-
-# -----------------------------
-# Carregamento
-# -----------------------------
-@st.cache_data(ttl=300)
-def carregar_dados():
-
-    return pd.read_excel(
-        URL_EXPORTACAO,
-        sheet_name=None,
-        engine="openpyxl"
-    )
-
-
-def atualizar_dados():
-
+# O parâmetro 'ttl' garante que o Streamlit busque o arquivo na nuvem novamente a cada 5 minutos
+@st.cache_data(ttl=300) 
+def carregar_dados_nuvem():
     try:
+        # Lê o arquivo Excel diretamente da URL de exportação pública
+        df = pd.read_excel(URL_EXPORTACAO)
+        return df
+    except Exception as e:
+        st.error(f"Erro ao conectar com o Google Drive: {e}")
+        return pd.DataFrame()
 
-        dados = carregar_dados()
+# Carrega e exibe os dados
+dados = carregar_dados_nuvem()
 
-        st.session_state["dados"] = dados
-        st.session_state["ultima_atualizacao"] = datetime.now()
+if not dados.empty:
+    st.success("Dados carregados com sucesso da nuvem!")
+    st.dataframe(dados)
+else:
+    st.warning("Aguardando conexão ou arquivo vazio.")
 
-        return True
-
-    except Exception as erro:
-
-        st.error(f"Erro ao carregar dados: {erro}")
-        return False
-
-
-# Primeira carga
-if st.session_state["dados"] is None:
-    atualizar_dados()
-
-
-# Atualização manual
-if st.button("🔄 Atualizar Dados"):
-
-    carregar_dados.clear()
-
-    if atualizar_dados():
-        st.success("Dados atualizados com sucesso")
-
-
-dados = st.session_state["dados"]
-
-prod = dados["Prod"]
-
-# -----------------------------
-# Indicadores
-# -----------------------------
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.metric("Total Registros", len(prod))
-
-with col2:
-    st.metric("Total Colunas", len(prod.columns))
-
-with col3:
-
-    ultima = st.session_state["ultima_atualizacao"]
-
-    st.metric(
-        "Última Atualização",
-        ultima.strftime("%d/%m/%Y %H:%M:%S")
-        if ultima else "-"
-    )
-
-st.divider()
-
-st.dataframe(
-    prod,
-    use_container_width=True,
-    hide_index=True
-)
+# Botão para o usuário forçar a atualização imediata na tela
+if st.button("Recarregar Dados Agora"):
+    st.cache_data.clear()
+    st.rerun()
