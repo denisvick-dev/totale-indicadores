@@ -53,9 +53,38 @@ df = pd.concat([prod, gpon], ignore_index=True)
 # FILTROS (SIDEBAR)
 # =========================================
 
-st.sidebar.header("Filtros")
+# Injeção de CSS atualizado para as novas versões do Streamlit
+st.html(
+    """
+    <style>
+    /* 1. Altera a cor do texto "Filtros" no topo da Sidebar */
+    .stSidebar h2 {
+        color: #1E3A8A !important; /* Azul escuro */
+        font-weight: 700 !important;
+    }
 
-# CORREÇÃO: Todos os filtros agora atualizam a mesma variável 'df' sequencialmente
+    /* 2. Altera a cor das etiquetas (labels) dos widgets na Sidebar */
+    .stSidebar [data-testid="stWidgetLabel"] p {
+        color: #4B5563 !important; /* Cinza escuro */
+        font-weight: 600 !important;
+    }
+
+    /* 3. Altera a cor de fundo e do texto das TAGS SELECIONADAS no multiselect */
+    .stSidebar [data-baseweb="tag"] {
+        background-color: #1E3A8A !important; /* Fundo azul escuro */
+        color: #FFFFFF !important; /* Texto branco */
+        border-radius: 4px !important;
+    }
+
+    /* 4. Altera a cor do ícone de "X" para fechar a tag */
+    .stSidebar [data-baseweb="tag"] svg {
+        fill: #FFFFFF !important;
+    }
+    </style>
+    """
+)
+
+st.sidebar.header("Filtros")
 
 # FILTRO PROJETO
 if 'Projeto' in df.columns:
