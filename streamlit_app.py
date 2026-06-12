@@ -12,7 +12,7 @@ def main():
     st.title("Seja bem-vindo aos painéis de Produção e Indicadores TOTALE 🚀")
 
     home_page = st.Page("pages/home.py", title="Home", icon="🏠", default=True)
-    envio_excel = st.Page("pages/envio_excel.py", title="Envio de Excel", icon="📂")
+    envio_excel = st.Page("pages/envio_excel.py", title="Atualização de Dados", icon="🔁")
     ranking_pontos = st.Page("pages/pontos.py", title="Ranking de Pontos", icon="📈")
     qtde_os = st.Page("pages/qtde_os.py", title="Quantidade de O.S.", icon="📊")
 

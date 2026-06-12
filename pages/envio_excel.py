@@ -4,11 +4,11 @@ from datetime import datetime
 
 st.set_page_config(
     page_title="Atualização de Dados",
-    page_icon="📂",
+    page_icon="icons/atualizar-seta.png",
     layout="wide"
 )
 
-st.title("📂 Atualização de Dados")
+st.title("🔁 Atualização de Dados")
 
 ID_PLANILHA = "11Dp9WdZYUrT_LBvfo07Mi8muKXZykU7v"
 
@@ -63,7 +63,7 @@ if st.session_state["dados"] is None:
 
 
 # Atualização manual
-if st.button("🔄 Atualizar Dados"):
+if st.button("Atualizar Dados", icon="🔁"):
 
     carregar_dados.clear()
 
