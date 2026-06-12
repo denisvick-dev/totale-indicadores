@@ -8,7 +8,7 @@ st.set_page_config(
 )
 
 def main():
-    st.image("images/Logo-Totale.png", width=200)
+    st.image("images/novo-logo-totale.png", width=200)
     st.title("Seja bem-vindo aos painéis de Produção TOTALE 🚀")
 
     home_page = st.Page("pages/home.py", title="Home", icon="🏠", default=True)
@@ -17,7 +17,7 @@ def main():
     qtde_os = st.Page("pages/qtde_os.py", title="Quantidade de O.S.", icon="📊")
 
     # 2. Configurar a navegação passando a lista de páginas
-    pg = st.logo("images/Logo-Totale.png")
+    pg = st.logo("images/novo-logo-totale.png")
     pg = st.navigation([home_page, envio_excel, ranking_pontos, qtde_os])
 
     pg.run()

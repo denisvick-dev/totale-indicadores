@@ -1,4 +1,9 @@
 {
-    "python-envs.defaultEnvManager": "ms-python.python:system"
-
+  "python-envs.defaultEnvManager": "ms-python.python:system",
+  "path-intellisense.autoSlashAfterDirectory": true,
+  "path-intellisense.autoTriggerNextSuggestion": true,
+  "path-intellisense.extensionOnImport": true,
+  "path-intellisense.ignoreTsConfigBaseUrl": true,
+  "path-intellisense.showHiddenFiles": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
 }
