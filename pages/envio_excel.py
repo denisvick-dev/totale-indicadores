@@ -3,12 +3,12 @@ import pandas as pd
 from datetime import datetime
 
 st.set_page_config(
-    page_title="Painel de Dados",
-    page_icon="📊",
+    page_title="Atualização de Dados",
+    page_icon="📂",
     layout="wide"
 )
 
-st.title("📊 Painel de Dados")
+st.title("📂 Atualização de Dados")
 
 ID_PLANILHA = "11Dp9WdZYUrT_LBvfo07Mi8muKXZykU7v"
 
@@ -68,7 +68,7 @@ if st.button("🔄 Atualizar Dados"):
     carregar_dados.clear()
 
     if atualizar_dados():
-        st.success("Dados atualizados com sucesso")
+        st.success("✅ Dados atualizados com sucesso!!")
 
 
 dados = st.session_state["dados"]

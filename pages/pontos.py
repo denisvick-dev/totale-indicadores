@@ -9,11 +9,11 @@ from io import BytesIO
 
 st.set_page_config(
     page_title="Ranking Geral de Pontos",
-    page_icon="🏆",
+    page_icon="icons/ranking-da-pagina.png",
     layout="wide"
 )
 
-st.title("🏆 Ranking Geral de Pontos")
+st.title("📈 Ranking Geral de Pontos")
 
 # =========================================
 # LEITURA E TRATAMENTO DAS ABAS
@@ -21,7 +21,7 @@ st.title("🏆 Ranking Geral de Pontos")
 
 if "dados" not in st.session_state:
 
-    st.warning("Carregue os dados na página principal primeiro.")
+    st.warning("⚠️ Carregue os dados na página principal primeiro.")
     st.stop()
 
 dados = st.session_state["dados"]
@@ -30,7 +30,7 @@ try:
     prod = dados["Prod"].copy()
     gpon = dados["Gpon"].copy()
 except KeyError as erro:
-    st.error(f"Aba não encontrada: {erro}")
+    st.error(f"❌ Aba não encontrada: {erro}")
     st.stop()
 
 # Tratamento dos pontos individualmente antes de juntar

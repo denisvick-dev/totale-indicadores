@@ -21,7 +21,7 @@ st.title("📊 Quantidade de O.S.")
 
 if "dados" not in st.session_state:
 
-    st.warning("Carregue os dados na página principal primeiro.")
+    st.warning("⚠️ Carregue os dados na página principal primeiro.")
     st.stop()
 
 dados = st.session_state["dados"]
