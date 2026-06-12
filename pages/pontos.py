@@ -196,9 +196,9 @@ if 'Nome Equipe' in df.columns:
         hide_index=True
     )
 
-    # =========================================
-    # TOP 10 GRÁFICO
-    # =========================================
+# =========================================
+# TOP 10 GRÁFICO
+# =========================================
 
     if not ranking.empty:
         top10 = ranking.head(10)
@@ -219,7 +219,6 @@ if 'Nome Equipe' in df.columns:
         st.plotly_chart(fig, use_container_width=True)
         st.write("")
 
-# CORREÇÃO: Indentação do bloco else ajustada para alinhar com o 'if Nome Equipe in df.columns'
 else:
     st.warning("⚠️ A coluna 'Nome Equipe' não foi encontrada nos dados para gerar o ranking.")
 
