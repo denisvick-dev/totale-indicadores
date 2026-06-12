@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from io import BytesIO
+import datetime
+import calendar
+import numpy as np
 
 # =========================================
 # CONFIGURAÇÃO
@@ -20,7 +23,6 @@ st.title("📈 Ranking Geral de Pontos")
 # =========================================
 
 if "dados" not in st.session_state:
-
     st.warning("⚠️ Carregue os dados na página principal primeiro.")
     st.stop()
 
@@ -53,6 +55,8 @@ df = pd.concat([prod, gpon], ignore_index=True)
 
 st.sidebar.header("Filtros")
 
+# CORREÇÃO: Todos os filtros agora atualizam a mesma variável 'df' sequencialmente
+
 # FILTRO PROJETO
 if 'Projeto' in df.columns:
     projetos_disponiveis = sorted(df['Projeto'].dropna().unique())
@@ -73,15 +77,15 @@ if 'Supervisor' in df.columns:
     )
     df = df[df['Supervisor'].isin(supervisores_selecionados)]
 
-
 # FILTRO EQUIPE
 if 'Nome Equipe' in df.columns:
+    equipes_disponiveis = sorted(df['Nome Equipe'].dropna().unique())
     equipes_selecionadas = st.sidebar.multiselect(
         "Equipe",
-        df['Nome Equipe'].unique(),
-        default=df['Nome Equipe'].unique()
+        options=equipes_disponiveis,
+        default=equipes_disponiveis
     )
-    df_filtrado = df[df['Nome Equipe'].isin(equipes_selecionadas)]
+    df = df[df['Nome Equipe'].isin(equipes_selecionadas)]
 
 # =========================================
 # KPIs
@@ -89,10 +93,10 @@ if 'Nome Equipe' in df.columns:
 
 col1, col2, col3, col4 = st.columns(4)
 
-# Totais a serem exibidos nos KPIs
+# Totais corrigidos utilizando a variável unificada 'df' (já filtrada)
 total_equipes = df['Nome Equipe'].nunique() if 'Nome Equipe' in df.columns else 0
 total_registros = len(df)
-total_filtrado = df_filtrado["Pontos"].sum()
+total_filtrado = df["Pontos"].sum() if "Pontos" in df.columns else 0
 
 col1.metric("Total Pontos (Geral)", f"{total_geral:,.0f}")
 col2.metric("Total Pontos (Filtrado)", f"{total_filtrado:,.0f}")
@@ -102,44 +106,91 @@ col4.metric("Total Registros (Filtrado)", total_registros)
 st.divider()
 
 # =========================================
+# INFORMAÇÕES DE ATUALIZAÇÃO
+# =========================================
+
+ultima_atualizacao = df['Data Agendamento'].max() if 'Data Agendamento' in df.columns else None
+
+hoje = datetime.date.today()
+ano_atual = hoje.year
+mes_atual = hoje.month
+
+_, ultimo_dia_num = calendar.monthrange(ano_atual, mes_atual)
+ult_dia = datetime.date(ano_atual, mes_atual, ultimo_dia_num)
+
+# CORREÇÃO: Convertendo as datas explicitamente para string/ISO padrão do numpy para evitar conflito de tipos
+data_inicio_np = np.datetime64(ultima_atualizacao.date() if pd.notna(ultima_atualizacao) else hoje)
+data_fim_np = np.datetime64(ult_dia) + np.timedelta64(1, 'D')
+
+dias_faltantes = np.busday_count(
+    data_inicio_np,
+    data_fim_np,
+    weekmask="1111110"  # Segunda a Sábado
+)
+
+# =========================================
 # COLORINDO O DATAFRAME
 # =========================================
 
 def colorir_metas(valor):
     if valor >= 300 and valor < 400:
-        cor = 'background-color: #E6FFE6'  # Verde claro
+        return 'background-color: #E6FFE6'  # Verde claro
     elif valor >= 400:
-        cor = 'background-color: #B8B8FF'  # Azul claro
-    else:
-        cor = ''
-    return cor
+        return 'background-color: #B8B8FF'  # Azul claro
+    return ''
 
 # =========================================
 # RANKING GERAL
 # =========================================
 
-# Inicializa a variável para evitar NameError na exportação
 ranking = pd.DataFrame()
 
 if 'Nome Equipe' in df.columns:
-    # Criando o agrupamento do Ranking baseado nos dados filtrados
+    # Agrupamento baseado nos dados filtrados atualizados
     ranking = (
         df.groupby(["CódAuxEquipe", "Nome Equipe", "Supervisor"])["Pontos"]
         .sum()
         .reset_index()
         .sort_values("Pontos", ascending=False)
     )
-    
-    # Adicionando a coluna posição
-    ranking.insert(0, 'Posição', range(1, len(ranking) + 1))
 
-    # Adicionando a coluna Meta (Exemplo: Meta de 300 pontos para todos, pode ser ajustada conforme necessidade)
+# ===========================================================
+# CRIAÇÃO DE VARIÁVEIS DE DIAS TRABALHADOS E MÉDIA DE PONTOS
+# ===========================================================
+
+    # Cálculo dos dias trabalhados por equipe
+    if 'Dias Trab Tecnico' in df.columns:
+        max_por_tecnico = df.groupby('Nome Equipe')['Dias Trab Tecnico'].max()
+        valores_mapeados = ranking['Nome Equipe'].map(max_por_tecnico)
+        dias_trabalhados = valores_mapeados.fillna(0).astype(int)
+    else:
+        dias_trabalhados = 0
+
+    # Média de pontos por dia trabalhado (Evita divisão por zero)
+    media_pontos = ranking['Pontos'] / dias_trabalhados.replace(0, np.nan)
+
+
+# ================================================
+# INSERÇÃO DE COLUNAS DE POSIÇÃO, META E PROJEÇÃO
+# ================================================
+
+    ranking.insert(0, 'Posição', range(1, len(ranking) + 1))
     ranking.insert(5, 'Meta', ranking['Pontos'] - 300)
-    
+    ranking.insert(6, 'Projeção', ranking['Pontos'] + (media_pontos * dias_faltantes))
+
+# =========================================
+# EXIBIÇÃO DO RANKING
+# =========================================
+
     st.subheader("🏅 Ranking Geral de Pontos")
 
     st.dataframe(
-        ranking.style.format({"Pontos": "{:,.2f}", "Meta": "{:,.2f}"}).map(colorir_metas, subset=['Pontos']),
+        ranking.style.format({
+            "Pontos": "{:,.2f}", 
+            "Meta": "{:,.2f}", 
+            "Média": "{:,.2f}", 
+            "Projeção": "{:,.2f}"
+        }).map(colorir_metas, subset=['Pontos']),
         use_container_width=True,
         height=500,
         hide_index=True
@@ -149,25 +200,31 @@ if 'Nome Equipe' in df.columns:
     # TOP 10 GRÁFICO
     # =========================================
 
-    top10 = ranking.head(10)
+    if not ranking.empty:
+        top10 = ranking.head(10)
 
-    fig = px.bar(
-        top10,
-        x='Nome Equipe',
-        y='Pontos',
-        text_auto=True,
-        title='Top 10 Equipes por Pontos',
-        color='Pontos',
-        color_continuous_scale='Oryel'
-    )
+        fig = px.bar(
+            top10,
+            x='Nome Equipe',
+            y='Pontos',
+            text_auto=True,
+            title='Top 10 Equipes por Pontos',
+            color='Pontos',
+            color_continuous_scale='Oryel'
+        )
 
-    fig.update_xaxes(title_text="")
-    fig.update_yaxes(title_text="")
+        fig.update_xaxes(title_text="")
+        fig.update_yaxes(title_text="")
 
-    st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True)
+        st.write("")
 
+# CORREÇÃO: Indentação do bloco else ajustada para alinhar com o 'if Nome Equipe in df.columns'
 else:
     st.warning("⚠️ A coluna 'Nome Equipe' não foi encontrada nos dados para gerar o ranking.")
+
+if pd.notna(ultima_atualizacao):
+    st.info(f"***Última Atualização:*** {pd.to_datetime(ultima_atualizacao).strftime('%d/%m/%Y')}")
 
 # =========================================
 # EXPORTAR EXCEL
@@ -179,7 +236,6 @@ def exportar_excel(dataframe):
         dataframe.to_excel(writer, index=False, sheet_name='Ranking')
     return output.getvalue()
 
-# Só exibe o botão de download se o ranking possuir dados
 if not ranking.empty:
     excel = exportar_excel(ranking)
 
