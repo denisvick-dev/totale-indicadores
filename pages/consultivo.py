@@ -5,6 +5,7 @@ from io import BytesIO
 import datetime
 import calendar
 import numpy as np
+from streamlit_gsheets import GSheetsConnection
 
 # =========================================
 # CONFIGURAÇÃO
@@ -42,6 +43,24 @@ consultivo["Qtde. Prod."] = pd.to_numeric(
     consultivo["PRODUTOS"], errors="coerce").fillna(0)
 
 df = pd.DataFrame(consultivo)
+
+# =========================================
+# Conexão com o Google Sheets
+# =========================================
+conexao = st.connection("gsheets", type=GSheetsConnection)
+
+# Link da planilha de Ativos
+URL_ATIVOS = "https://docs.google.com/spreadsheets/d/1LQKDcLshC6XSXLBVWaEYSpxrro6uydyU9pwDLc38pEg/edit"
+
+try:
+    with st.spinner("Sincronizando dados com o Google Sheets..."):
+        # 1. Puxa Ativos utilizando o driver gsheets nativo
+        df_ativos = conexao.read(spreadsheet=URL_ATIVOS, ttl=0)
+        df_ativos.columns = df_ativos.columns.str.strip()
+except Exception as erro:
+    st.error(f"❌ Falha crítica ao conectar com as planilhas: {erro}")
+    st.stop()
+
 
 # =========================================
 # FILTROS (SIDEBAR)

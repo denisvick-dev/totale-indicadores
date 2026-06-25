@@ -19,6 +19,7 @@ st.title("🔁 Atualização de Dados")
 
 ID_PLANILHA_PROD = "11Dp9WdZYUrT_LBvfo07Mi8muKXZykU7v"
 ID_PLANILHA_CONS = "1K-n9uJOnAQAZAAalhC4IO9M-BVnkN0WM"
+ID_PLANILHA_ATIVOS = "1LQKDcLshC6XSXLBVWaEYSpxrro6uydyU9pwDLc38pEg"
 
 URL_EXPORTACAO_PROD = (
     f"https://docs.google.com/spreadsheets/d/"
@@ -30,6 +31,8 @@ URL_EXPORTACAO_CONS = (
     f"{ID_PLANILHA_CONS}/export?format=xlsx"
 )
 
+URL_EXPORTACAO_ATIVOS = f"https://docs.google.com/spreadsheets/d/{ID_PLANILHA_ATIVOS}/export?format=csv"
+
 # -----------------------------
 # Session State
 # -----------------------------
@@ -38,6 +41,9 @@ if "dados_prod" not in st.session_state:
 
 if "dados_cons" not in st.session_state:
     st.session_state["dados_cons"] = None
+
+if "dados_ativos" not in st.session_state:
+    st.session_state["dados_ativos"] = None
 
 if "ultima_atualizacao" not in st.session_state:
     st.session_state["ultima_atualizacao"] = None
@@ -64,6 +70,12 @@ def carregar_dados_cons():
         engine="openpyxl"
     )
 
+@st.cache_data(ttl=300)
+def carregar_dados_ativos():
+    df = pd.read_csv(URL_EXPORTACAO_ATIVOS)
+    df.columns = df.columns.str.strip()  # Remove espaços extras nas colunas
+    return df
+
 
 def atualizar_dados():
 
@@ -72,25 +84,29 @@ def atualizar_dados():
 
     try:
         texto.markdown("⏳ Carregando produção...")
-        barra_progresso.progress(30)
+        barra_progresso.progress(20)
         dados_prod = carregar_dados_prod()
 
         texto.markdown("⏳ Carregando consultivos...")
-        barra_progresso.progress(60)
+        barra_progresso.progress(50)
         dados_cons = carregar_dados_cons()
+
+        texto.markdown("⏳ Carregando lista de ativos...")
+        barra_progresso.progress(75)
+        dados_ativos = carregar_dados_ativos()
 
         texto.markdown("⚙️ Processando e salvando informações...")
         barra_progresso.progress(90)
 
         st.session_state["dados_prod"] = dados_prod
         st.session_state["dados_cons"] = dados_cons
+        st.session_state["dados_ativos"] = dados_ativos
         st.session_state["ultima_atualizacao"] = datetime.now(fuso)
 
         barra_progresso.progress(100)
-        time.sleep(1)
+        time.sleep(0.5)
         texto.empty()
         barra_progresso.empty()
-
         return True
 
     except Exception as erro:
@@ -99,9 +115,12 @@ def atualizar_dados():
         st.error(f"Erro ao carregar dados: {erro}")
         return False
 
-
-# Primeira carga
-if st.session_state["dados_prod"] is None and st.session_state["dados_cons"] is None:
+# Primeira carga automática
+if (
+    st.session_state["dados_prod"] is None
+    and st.session_state["dados_cons"] is None
+    and st.session_state["dados_ativos"] is None
+):
     atualizar_dados()
 
 # Atualização manual
@@ -109,6 +128,7 @@ if st.button("Atualizar Dados", icon="🔁"):
 
     carregar_dados_prod.clear()
     carregar_dados_cons.clear()
+    carregar_dados_ativos.clear()
 
     if atualizar_dados():
         st.success("✅ Dados atualizados com sucesso!!")
@@ -116,13 +136,29 @@ if st.button("Atualizar Dados", icon="🔁"):
 
 dados_prod = st.session_state["dados_prod"]
 dados_cons = st.session_state["dados_cons"]
+dados_ativos = st.session_state["dados_ativos"]
 
 prod = dados_prod["Prod"]
 cons = dados_cons["Consultivo"]
+cons.columns = cons.columns.str.strip()
+
+# =============================================
+# MERGE DA LISTA DE ATIVOS PARA O CONSULTIVO
+# =============================================
+
+if "Login" in dados_ativos.columns and "LOGIN NETSALES" in cons.columns:
+    cons = pd.merge(
+        cons,
+        dados_ativos[["Login", "U.N.", "Base"]],
+        left_on="LOGIN NETSALES",
+        right_on="Login",
+        how="left",
+    ).drop(columns=["Login"], errors="ignore")
 
 # -----------------------------
 # Indicadores - Bloco 1 (Prod)
 # -----------------------------
+
 with st.container(border=True):
     col1, col2, col3 = st.columns(3)
 
@@ -149,6 +185,7 @@ st.dataframe(
 # -----------------------------
 # Indicadores - Bloco 2 (Cons)
 # -----------------------------
+
 with st.container(border=True):
     col4, col5, col6 = st.columns(3)
 
