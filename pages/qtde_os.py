@@ -10,7 +10,8 @@ import numpy as np
 # CONFIGURAÇÃO
 # =========================================
 
-st.set_page_config(page_title="Quantidade de O.S.", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Quantidade de O.S.",
+                   page_icon="📊", layout="wide")
 
 st.title("📊 Quantidade de O.S.")
 st.divider()
@@ -161,7 +162,8 @@ with col1:
 
     # 1. Agrupa e conta a quantidade atual de OS por Supervisor
     qtde_os_supervisor = (
-        df.groupby(["Supervisor"])["OS"].count().reset_index(name="Qtde. de O.S.")
+        df.groupby(["Supervisor"])["OS"].count(
+        ).reset_index(name="Qtde. de O.S.")
     )
 
     # 2. Calcula a projeção para cada supervisor utilizando a média individualizada
@@ -176,7 +178,8 @@ with col1:
 
     # Projeção = Total Atual + (Média Diária do Supervisor * Dias Faltantes)
     qtde_os_supervisor["Projeção"] = (
-        qtde_os_supervisor["Qtde. de O.S."] + (media_individual * dias_faltantes)
+        qtde_os_supervisor["Qtde. de O.S."] +
+        (media_individual * dias_faltantes)
     ).astype(int)
 
     # 3. Exibe o dataframe final e ordenado

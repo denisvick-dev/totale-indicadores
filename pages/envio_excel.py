@@ -45,6 +45,8 @@ if "ultima_atualizacao" not in st.session_state:
 # -----------------------------
 # Carregamento
 # -----------------------------
+
+
 @st.cache_data(ttl=300)
 def carregar_dados_prod():
     return pd.read_excel(
@@ -52,6 +54,7 @@ def carregar_dados_prod():
         sheet_name=None,
         engine="openpyxl"
     )
+
 
 @st.cache_data(ttl=300)
 def carregar_dados_cons():
@@ -95,6 +98,7 @@ def atualizar_dados():
         barra_progresso.empty()
         st.error(f"Erro ao carregar dados: {erro}")
         return False
+
 
 # Primeira carga
 if st.session_state["dados_prod"] is None and st.session_state["dados_cons"] is None:
@@ -166,5 +170,5 @@ st.dataframe(
     cons,
     use_container_width=True,
     hide_index=True
-    
+
 )

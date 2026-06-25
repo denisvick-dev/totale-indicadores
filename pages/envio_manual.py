@@ -9,7 +9,8 @@ if "df_producao" not in st.session_state:
     st.session_state["df_producao"] = None
 
 # Componente de upload de arquivo
-arquivo_enviado = st.file_uploader("Escolha um arquivo Excel", type=["xlsx", "xls"])
+arquivo_enviado = st.file_uploader(
+    "Escolha um arquivo Excel", type=["xlsx", "xls"])
 
 if arquivo_enviado is not None:
     try:

@@ -67,7 +67,8 @@ def tela_login():
     st.subheader("🔑 Controle de Acesso")
 
     with st.form("formulario_login"):
-        usuario_input = st.text_input("Usuário", placeholder="Digite seu usuário")
+        usuario_input = st.text_input(
+            "Usuário", placeholder="Digite seu usuário")
         senha_input = st.text_input(
             "Senha", type="password", placeholder="Digite sua senha"
         )
@@ -239,7 +240,8 @@ def area_autenticacao():
             if botao_cadastrar:
                 # Validações básicas de segurança antes de inserir no banco
                 if not novo_usuario or not nova_senha:
-                    st.warning("Preencha todos os campos para efetuar o cadastro.")
+                    st.warning(
+                        "Preencha todos os campos para efetuar o cadastro.")
                 elif len(nova_senha) < 6:
                     st.error("A senha deve ter pelo menos 6 caracteres.")
                 elif nova_senha != confirmar_senha:

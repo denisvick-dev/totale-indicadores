@@ -2,7 +2,10 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# Configuração da página (deve ser o primeiro comando Streamlit)
+# ===========================================
+# Inicializção da página
+# ===========================================
+
 st.set_page_config(
     page_title="Gerenciador Totale - Ativos",
     page_icon="📊",
@@ -10,6 +13,10 @@ st.set_page_config(
 )
 
 st.title("📊 Gerenciador de Dados - Google Sheets")
+
+# ===========================================
+# Conexão com Google Sheets
+# ===========================================
 
 # 1. Inicializa a conexão com o Google Sheets
 conexao = st.connection("gsheets", type=GSheetsConnection)
@@ -70,7 +77,7 @@ if not lista_ativos.empty:
     st.dataframe(
         lista_ativos, 
         use_container_width=True,
-        hide_index=True  # Oculta aquela coluna de numeração padrão do pandas para ficar mais limpo
+        hide_index=True
     )
 
 else:
