@@ -226,7 +226,7 @@ with col2:
 st.subheader("👷 Visão por Técnico")
 
 st.dataframe(
-    df.groupby(["CódAuxEquipe", "Nome Equipe", "Supervisor"])["OS"]
+    df.groupby(["CódAuxEquipe", "Nome Equipe", "Supervisor", "Projeto"])["OS"]
     .count()
     .reset_index(name="Qtde. de O.S.")
     .sort_values("Qtde. de O.S.", ascending=False)
