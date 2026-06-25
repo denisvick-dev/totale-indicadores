@@ -16,7 +16,7 @@ def main():
     ranking_pontos = st.Page("pages/pontos.py", title="Ranking de Pontos", icon="📈")
     qtde_os = st.Page("pages/qtde_os.py", title="Quantidade de O.S.", icon="📊")
     consultivo = st.Page("pages/consultivo.py", title="Consultivos", icon="📋")
-    lista_ativos = st.Page(page="pages/lista_ativos.py", title="Lista de Ativos")
+    lista_ativos = st.Page(page="pages/lista_ativos.py", title="Lista de Ativos", icon="👷")
 
 
     # 2. Configurar a navegação passando a lista de páginas

@@ -2,29 +2,76 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-st.title("Gerenciador de Dados - Google Sheets")
+# Configuração da página (deve ser o primeiro comando Streamlit)
+st.set_page_config(
+    page_title="Gerenciador Totale - Ativos",
+    page_icon="📊",
+    layout="wide"
+)
 
-# 1. Cria a conexão (puxa automaticamente os dados de secrets.toml)
+st.title("📊 Gerenciador de Dados - Google Sheets")
+
+# 1. Inicializa a conexão com o Google Sheets
 conexao = st.connection("gsheets", type=GSheetsConnection)
+URL_ATIVOS = "https://docs.google.com/spreadsheets/d/1LQKDcLshC6XSXLBVWaEYSpxrro6uydyU9pwDLc38pEg/edit"
 
-# 2. Lê a planilha tratando possíveis erros de nome de aba
+# 2. Leitura dos dados com cache e tratamento de erros
 try:
-    # CORREÇÃO: Alinhado o nome da aba para "Ativos" conforme a lógica do seu app
-    lista_ativos = conexao.read(worksheet="lista_ativos", ttl=0)
-    st.success("Conexão estabelecida e aba 'Ativos' carregada!")
-except Exception as e:
-    # Se a aba "Ativos" não existir, avisa o usuário e tenta carregar a primeira aba
-    st.warning(f"Aba 'Ativos' não encontrada. Tentando primeira aba padrão...")
-    try:
-        lista_ativos = conexao.read(ttl=0)
-        st.success("Primeira aba carregada com sucesso!")
-    except Exception as erro_geral:
-        st.error(f"Falha crítica na conexão: {erro_geral}")
-        lista_ativos = pd.DataFrame()  # Evita quebrar o código abaixo
+    # ttl=0 garante que os dados sejam buscados em tempo real sem travar no cache
+    lista_ativos = conexao.read(spreadsheet=URL_ATIVOS, ttl=0)
+    st.success("⚡ Conexão estabelecida e dados sincronizados com o Google Sheets!")
+except Exception as erro:
+    st.error(f"❌ Falha crítica ao conectar com a planilha: {erro}")
+    lista_ativos = pd.DataFrame()
 
-# 3. Exibe os dados na tela se o DataFrame não estiver vazio
-st.subheader("Dados Atuais")
+# 3. Bloco de exibição e inteligência de dados
 if not lista_ativos.empty:
-    st.dataframe(lista_ativos, use_container_width=True)
+    # Garante que espaços extras nos nomes das colunas não quebrem os filtros
+    lista_ativos.columns = lista_ativos.columns.str.strip()
+
+    # --- PAINEL DE MÉTRICAS (KPIs) ---
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total de Registros", len(lista_ativos))
+    with col2:
+        # Conta quantos técnicos estão explicitamente com a Situação "ATIVO"
+        ativos = len(lista_ativos[lista_ativos['Situação'].str.upper() == 'ATIVO']) if 'Situação' in lista_ativos.columns else 0
+        st.metric("Técnicos Ativos", ativos)
+    with col3:
+        # Conta quantos técnicos estão em "FÉRIAS"
+        ferias = len(lista_ativos[lista_ativos['Situação'].str.upper() == 'FÉRIAS']) if 'Situação' in lista_ativos.columns else 0
+        st.metric("Em Férias", ferias)
+    with col4:
+        # Conta as bases operacionais distintas
+        bases = lista_ativos['Base'].nunique() if 'Base' in lista_ativos.columns else 0
+        st.metric("Bases Operadas", bases)
+
+    st.divider()
+
+    # --- FILTROS NA BARRA LATERAL (SIDEBAR) ---
+    st.sidebar.header("🎯 Filtros Avançados")
+    
+    # Filtro por Monitor
+    if 'Monitor' in lista_ativos.columns:
+        opcoes_monitor = ["Todos"] + sorted(lista_ativos['Monitor'].dropna().unique().tolist())
+        monitor_selecionado = st.sidebar.selectbox("Filtrar por Monitor:", opcoes_monitor)
+        if monitor_selecionado != "Todos":
+            lista_ativos = lista_ativos[lista_ativos['Monitor'] == monitor_selecionado]
+
+    # Filtro por Situação (Ativo, Férias, Inoperante)
+    if 'Situação' in lista_ativos.columns:
+        opcoes_situacao = ["Todas"] + sorted(lista_ativos['Situação'].dropna().unique().tolist())
+        situacao_selecionada = st.sidebar.selectbox("Filtrar por Situação:", opcoes_situacao)
+        if situacao_selecionada != "Todas":
+            lista_ativos = lista_ativos[lista_ativos['Situação'] == situacao_selecionada]
+
+    # --- TABELA FINAL ---
+    st.subheader("📋 Dados Atuais Filtrados")
+    st.dataframe(
+        lista_ativos, 
+        use_container_width=True,
+        hide_index=True  # Oculta aquela coluna de numeração padrão do pandas para ficar mais limpo
+    )
+
 else:
-    st.info("Nenhum dado foi carregado.")
+    st.info("ℹ️ Nenhum dado foi carregado ou a planilha está vazia.")
