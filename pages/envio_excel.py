@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import time
+import re
 from datetime import datetime, timezone, timedelta
 
 # =========================================
@@ -18,7 +19,7 @@ st.set_page_config(
 st.title("🔁 Atualização de Dados")
 
 ID_PLANILHA_PROD = "11Dp9WdZYUrT_LBvfo07Mi8muKXZykU7v"
-ID_PLANILHA_CONS = "1K-n9uJOnAQAZAAalhC4IO9M-BVnkN0WM"
+ID_PLANILHA_CONS = "1RD_A-otPHs40Sas6YNtaT271YqvkOu3W"
 ID_PLANILHA_ATIVOS = "1LQKDcLshC6XSXLBVWaEYSpxrro6uydyU9pwDLc38pEg"
 
 URL_EXPORTACAO_PROD = (
@@ -70,6 +71,7 @@ def carregar_dados_cons():
         engine="openpyxl"
     )
 
+
 @st.cache_data(ttl=300)
 def carregar_dados_ativos():
     df = pd.read_csv(URL_EXPORTACAO_ATIVOS)
@@ -115,6 +117,7 @@ def atualizar_dados():
         st.error(f"Erro ao carregar dados: {erro}")
         return False
 
+
 # Primeira carga automática
 if (
     st.session_state["dados_prod"] is None
@@ -142,6 +145,24 @@ prod = dados_prod["Prod"]
 cons = dados_cons["Consultivo"]
 cons.columns = cons.columns.str.strip()
 
+# =========================================
+# CRIAÇÃO DE VARIÁVEIS
+# =========================================
+
+# Consultivos
+if {"PLANO TV", "PLANO INTERNET"}.issubset(cons.columns):
+    cons["QTDE_CONSULTIVO"] = (cons[["PLANO TV", "PLANO INTERNET"]] != "-").sum(axis=1)
+
+# Produtos
+if "OBSERVACAO" in cons.columns:
+   cons["LISTA_PRODUTOS"] = cons["OBSERVACAO"].astype(str).apply(
+      lambda x: re.findall(r"\b\d{10}\b", x)
+   )
+   cons["QTDE_PRODUTOS"] = cons["LISTA_PRODUTOS"].apply(len)
+else:
+   cons["LISTA_PRODUTOS"] = [[]] * len(cons)
+   cons["QTDE_PRODUTOS"] = 0
+
 # =============================================
 # MERGE DA LISTA DE ATIVOS PARA O CONSULTIVO
 # =============================================
@@ -149,7 +170,7 @@ cons.columns = cons.columns.str.strip()
 if "Login" in dados_ativos.columns and "LOGIN NETSALES" in cons.columns:
     cons = pd.merge(
         cons,
-        dados_ativos[["Login", "U.N.", "Base"]],
+        dados_ativos[["Login", "Monitor", "U.N.", "Base"]],
         left_on="LOGIN NETSALES",
         right_on="Login",
         how="left",

@@ -38,9 +38,12 @@ except KeyError as erro:
     st.stop()
 
 consultivo["Qtde. Cons."] = pd.to_numeric(
-    consultivo["CONSULTIVO"], errors="coerce").fillna(0)
+    consultivo["QTDE_CONSULTIVO"], errors="coerce"
+).fillna(0).astype(int)
+
 consultivo["Qtde. Prod."] = pd.to_numeric(
-    consultivo["PRODUTOS"], errors="coerce").fillna(0)
+    consultivo["QTDE_PRODUTOS"], errors="coerce"
+).fillna(0).astype(int)
 
 df = pd.DataFrame(consultivo)
 
@@ -61,6 +64,27 @@ except Exception as erro:
     st.error(f"❌ Falha crítica ao conectar com as planilhas: {erro}")
     st.stop()
 
+# =========================================
+# MERGE COM OS DADOS DO GOOGLE SHEETS
+# =========================================
+df["LOGIN NETSALES"] = df["LOGIN NETSALES"].astype(str).str.strip()
+df_ativos["Login"] = df_ativos["Login"].astype(str).str.strip()
+
+df_ativos_subset = df_ativos[["Login", "Monitor", "Base"]].drop_duplicates(subset=[
+                                                                        "Login"])
+
+df = df.drop(columns=["Monitor", "Base"], errors="ignore")
+
+df = pd.merge(
+    df,
+    df_ativos_subset,
+    left_on="LOGIN NETSALES",
+    right_on="Login",
+    how="left"
+)
+
+df["Monitor"] = df["Monitor"].fillna("Não Identificado").astype(str)
+df["Base"] = df["Base"].fillna("Não Identificado").astype(str)
 
 # =========================================
 # FILTROS (SIDEBAR)
@@ -99,21 +123,21 @@ st.html("""
 
 st.sidebar.header("Filtros")
 
-# FILTRO EPO
-if "EPO" in df.columns:
-    epos_disponiveis = sorted(df["EPO"].dropna().unique())
-    epos_selecionados = st.sidebar.multiselect(
-        "EPO", options=epos_disponiveis, default=epos_disponiveis
+# FILTRO Base
+if "Base" in df.columns:
+    bases_disponiveis = sorted(df["Base"].dropna().unique())
+    bases_selecionados = st.sidebar.multiselect(
+        "Base", options=bases_disponiveis, default=bases_disponiveis
     )
-    df = df[df["EPO"].isin(epos_selecionados)]
+    df = df[df["Base"].isin(bases_selecionados)]
 
-# FILTRO MONITOR
-if "MONITOR" in df.columns:
-    monitores_disponiveis = sorted(df["MONITOR"].dropna().unique())
+# FILTRO Monitor
+if "Monitor" in df.columns:
+    monitores_disponiveis = sorted(df["Monitor"].dropna().unique())
     monitores_selecionados = st.sidebar.multiselect(
-        "MONITOR", options=monitores_disponiveis, default=monitores_disponiveis
+        "Monitor", options=monitores_disponiveis, default=monitores_disponiveis
     )
-    df = df[df["MONITOR"].isin(monitores_selecionados)]
+    df = df[df["Monitor"].isin(monitores_selecionados)]
 
 # =========================================
 # COLORINDO O DATAFRAME
@@ -134,12 +158,12 @@ def colorir(valor):
 
 
 colunas_obrigatorias = ["LOGIN NETSALES", "VENDEDOR",
-                        "MONITOR", "Qtde. Cons.", "Qtde. Prod."]
+                        "Monitor", "Base", "Qtde. Cons.", "Qtde. Prod."]
 
 if all(col in df.columns for col in colunas_obrigatorias):
 
     total_consultivos = (
-        df.groupby(["LOGIN NETSALES", "VENDEDOR", "MONITOR"])[
+        df.groupby(["LOGIN NETSALES", "VENDEDOR", "Monitor", "Base"])[
             ["Qtde. Cons.", "Qtde. Prod."]]
         .sum()
         .reset_index()
@@ -150,16 +174,40 @@ if all(col in df.columns for col in colunas_obrigatorias):
     total_consultivos.insert(
         0, "Posição", range(1, len(total_consultivos) + 1))
 
-    # 3. Correção: Renomeação de ambas as colunas calculadas
     total_consultivos = total_consultivos.rename(columns={
         "Qtde. Cons.": "Total Consultivos",
         "Qtde. Prod.": "Total Produtos"
     })
 
+    total_consultivos["LOGIN NETSALES"] = total_consultivos["LOGIN NETSALES"].astype(
+        str)
+    total_consultivos["VENDEDOR"] = total_consultivos["VENDEDOR"].astype(str)
+    total_consultivos["Monitor"] = total_consultivos["Monitor"].astype(str)
+
+    total_consultivos["Posição"] = total_consultivos["Posição"].astype(int)
+    total_consultivos["Total Consultivos"] = total_consultivos["Total Consultivos"].astype(
+        int)
+    total_consultivos["Total Produtos"] = total_consultivos["Total Produtos"].astype(
+        int)
+
 else:
     st.error(
         "⚠️ As colunas necessárias para o ranking não foram encontradas na base de dados.")
+    st.write("**Colunas esperadas:**", colunas_obrigatorias)
+    st.write("**Colunas encontradas na sua base:**", list(df.columns))
     st.stop()
+
+# =========================================
+# KPIs
+# =========================================
+
+col1, col2 = st.columns(2)
+
+qtde_cons = (df[["PLANO TV", "PLANO INTERNET"]] != "-").sum().sum()
+qtde_prod = df["QTDE_PRODUTOS"] = df["LISTA_PRODUTOS"].apply(len).sum()
+
+col1.metric("Total Consultivos", f"{qtde_cons:,.0f}")
+col2.metric("Total Produtos", f"{qtde_prod:,.0f}")
 
 # =========================================
 # EXIBIÇÃO DA TABELA DE CONSULTIVOS
