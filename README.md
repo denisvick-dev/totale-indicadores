@@ -1,7 +1,3 @@
-Abaixo está um **README profissional e completo** para o projeto **Totale Indicadores**, focado nos painéis de produção, indicadores operacionais, ranking e acompanhamento de desempenho.
-
----
-
 # 📊 TOTALE INDICADORES
 
 ## Sistema de Gestão de Produção, Indicadores e Performance Operacional
