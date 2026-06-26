@@ -21,7 +21,6 @@ imgs_carrossel = [
     {"img": "images/informe_vagas.jpeg"},
     {"img": "images/consultivo_copa.jpg"},
     {"img": "images/desfile-msp.jpg"},
-    {"img": "images/aniv_junho.jpeg"}
 ]
 
 # =====================================
