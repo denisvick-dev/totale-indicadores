@@ -44,7 +44,7 @@ Google Sheets / Excel / Banco de Dados
                   Usuário
 ```
 
-A aplicação utiliza componentes de dashboard modernos, KPIs em destaque e gráficos interativos para acompanhamento da operação. O Streamlit fornece suporte nativo para exibição de métricas, painéis e indicadores executivos. ([Documentação Streamlit][1])
+A aplicação utiliza componentes de dashboard modernos, KPIs em destaque e gráficos interativos para acompanhamento da operação. O Streamlit fornece suporte nativo para exibição de métricas, painéis e indicadores executivos.
 
 ---
 
