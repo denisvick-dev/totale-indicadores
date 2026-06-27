@@ -5,6 +5,7 @@ from io import BytesIO
 import datetime
 import calendar
 import numpy as np
+import time
 from streamlit_gsheets import GSheetsConnection
 
 # =========================================
@@ -50,18 +51,25 @@ df = pd.DataFrame(consultivo)
 # =========================================
 # Conexão com o Google Sheets
 # =========================================
+barra_progresso = st.progress(0)
+
 conexao = st.connection("gsheets", type=GSheetsConnection)
 
 # Link da planilha de Ativos
 URL_ATIVOS = "https://docs.google.com/spreadsheets/d/1LQKDcLshC6XSXLBVWaEYSpxrro6uydyU9pwDLc38pEg/edit"
 
 try:
-    with st.spinner("Sincronizando dados com o Google Sheets..."):
-        # 1. Puxa Ativos utilizando o driver gsheets nativo
+    barra_progresso.progress(50)
+    with st.spinner("🔁 Sincronizando dados com o Google Sheets..."):
+        # Puxa Ativos utilizando o driver gsheets nativo
         df_ativos = conexao.read(spreadsheet=URL_ATIVOS, ttl=0)
         df_ativos.columns = df_ativos.columns.str.strip()
+        barra_progresso.progress(100)
+        time.sleep(0.5)
+        barra_progresso.empty()
 except Exception as erro:
     st.error(f"❌ Falha crítica ao conectar com as planilhas: {erro}")
+    barra_progresso.empty()
     st.stop()
 
 # =========================================
@@ -109,7 +117,7 @@ st.html("""
 
     /* 3. Altera a cor de fundo e do texto das TAGS SELECIONADAS no multiselect */
     .stSidebar [data-baseweb="tag"] {
-        background-color: #F37C04 !important; /* Fundo laranja */
+        background-color: #012869 !important; /* Fundo laranja */
         color: #FFFFFF !important; /* Texto branco */
         border-radius: 4px !important;
     }
@@ -118,8 +126,22 @@ st.html("""
     .stSidebar [data-baseweb="tag"] svg {
         fill: #FFFFFF !important;
     }
+    [data-testid="stSidebar"] {
+        background-image: linear-gradient(180deg, #FEDBB9, #A15202);
+        color: white;
+    }
     </style>
     """)
+
+# =========================================
+# FILTROS (SIDEBAR) - VERSÃO CORRIGIDA
+# =========================================
+
+for coluna in ["Base", "Monitor"]:
+    if coluna in df.columns:
+        df[coluna] = df[coluna].astype(str).str.strip()
+    if coluna in df_ativos.columns:
+        df_ativos[coluna] = df_ativos[coluna].astype(str).str.strip()
 
 st.sidebar.header("Filtros")
 
@@ -130,6 +152,8 @@ if "Base" in df.columns:
         "Base", options=bases_disponiveis, default=bases_disponiveis
     )
     df = df[df["Base"].isin(bases_selecionados)]
+    if "Base" in df_ativos.columns:
+        df_ativos = df_ativos[df_ativos["Base"].isin(bases_selecionados)]
 
 # FILTRO Monitor
 if "Monitor" in df.columns:
@@ -138,28 +162,33 @@ if "Monitor" in df.columns:
         "Monitor", options=monitores_disponiveis, default=monitores_disponiveis
     )
     df = df[df["Monitor"].isin(monitores_selecionados)]
+    if "Monitor" in df_ativos.columns:
+        df_ativos = df_ativos[df_ativos["Monitor"].isin(monitores_selecionados)]
 
 # FILTRO Data
 if "DATA" in df.columns:
     df["DATA"] = pd.to_datetime(df["DATA"])
-    
-    data_minima = df["DATA"].min().date()
-    data_maxima = df["DATA"].max().date()
 
-    intervalo_datas = st.sidebar.date_input(
-        "Selecione o período:",
-        value=(data_minima, data_maxima),
-        min_value=data_minima,
-        max_value=data_maxima,
-        format="DD/MM/YYYY"
-    )
+    datas_validas = df["DATA"].dropna()
+
+    if not datas_validas.empty:
+        data_minima = df["DATA"].min().date()
+        data_maxima = df["DATA"].max().date()
+
+        intervalo_datas = st.sidebar.date_input(
+            "Selecione o período:",
+            value=(data_minima, data_maxima),
+            min_value=data_minima,
+            max_value=data_maxima,
+            format="DD/MM/YYYY"
+        )
     
-    if len(intervalo_datas) == 2:
-        inicial, final = intervalo_datas
-        mascara = (df["DATA"].dt.date >= inicial) & (df["DATA"].dt.date <= final)
-        df = df.loc[mascara]
+        if isinstance(intervalo_datas, tuple) and len(intervalo_datas) == 2:
+            inicial, final = intervalo_datas
+            mascara = (df["DATA"].dt.date >= inicial) & (df["DATA"].dt.date <= final)
+            df = df.loc[mascara]
     else:
-        df = df.copy()
+        st.sidebar.warning("**⚠️ Nenhuma data válida encontrada!!**")
 
 # =========================================
 # COLORINDO O DATAFRAME
@@ -223,13 +252,44 @@ else:
 # KPIs
 # =========================================
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
+col4, col5, col6, col7, col8 = st.columns(5)
 
-qtde_cons = (df[["PLANO TV", "PLANO INTERNET"]] != "-").sum().sum()
-qtde_prod = df["QTDE_PRODUTOS"] = df["LISTA_PRODUTOS"].apply(len).sum()
+equipes_cons = df.groupby("VENDEDOR")["QTDE_CONSULTIVO"].sum().reset_index()
+equipes_maiorquezero = equipes_cons[equipes_cons["QTDE_CONSULTIVO"] > 0].shape[0]
 
-col1.metric("Total Consultivos", f"{qtde_cons:,.0f}")
-col2.metric("Total Produtos", f"{qtde_prod:,.0f}")
+total_equipes = df_ativos_subset.shape[0]
+
+qtde_cons = pd.to_numeric(
+    consultivo["QTDE_CONSULTIVO"], errors="coerce"
+).fillna(0).astype(int).shape[0]
+
+qtde_prod = pd.to_numeric(
+    consultivo["QTDE_PRODUTOS"], errors="coerce"
+).fillna(0).astype(int).shape[0]
+
+if "Login" in df_ativos.columns:
+    total_equipes_filtrado = df_ativos["Login"].dropna().astype(str).str.strip().nunique()
+else:
+    total_equipes_filtrado = 0
+
+qtde_cons_filtrado = (df[["PLANO TV", "PLANO INTERNET"]] != "-").sum().sum()
+qtde_prod_filtrado = df["QTDE_PRODUTOS"] = df["LISTA_PRODUTOS"].apply(len).sum()
+
+try:
+    efic = 0
+    efic = equipes_maiorquezero / total_equipes_filtrado
+except ZeroDivisionError:
+    st.sidebar.info("ℹ️ Divisão por zero")
+
+col1.metric("Total de Equipes", f"{total_equipes:,.0f}")
+col2.metric("Total Consultivos (Geral)", f"{qtde_cons:,.0f}")
+col3.metric("Total Produtos (Geral)", f"{qtde_prod:,.0f}")
+col4.metric("Equipes que fizeram Consultivo", f"{equipes_maiorquezero:,.0f}")
+col5.metric("Total de Equipes (Filtrado)", f"{total_equipes_filtrado:,.0f}")
+col6.metric("Eficiência", f"{efic:,.1%}")
+col7.metric("Total Consultivos (Filtrado)", f"{qtde_cons_filtrado:,.0f}")
+col8.metric("Total Produtos (Filtrado)", f"{qtde_prod_filtrado:,.0f}")
 
 # =========================================
 # EXIBIÇÃO DA TABELA DE CONSULTIVOS
