@@ -145,15 +145,21 @@ if "DATA" in df.columns:
     
     data_minima = df["DATA"].min().date()
     data_maxima = df["DATA"].max().date()
-    
-    data_selecionada = st.sidebar.date_input(
-        "Escolha uma data:",
-        value=datetime.date.today() - datetime.timedelta(days=1),    # Começa no dia de hoje
-        min_value=data_minima,                                       # Limita a data mínima do arquivo
-        max_value=data_maxima,                                       # Limita a data máxima do arquivo
-        format="DD/MM/YYYY"                                          # Padrão brasileiro
+
+    intervalo_datas = st.sidebar.date_input(
+        "Selecione o período:",
+        value=(data_minima, data_maxima),
+        min_value=data_minima,
+        max_value=data_maxima,
+        format="DD/MM/YYYY"
     )
-    df = df[df["DATA"].dt.date == data_selecionada]
+    
+    if len(intervalo_datas) == 2:
+        inicial, final = intervalo_datas
+        mascara = (df["DATA"].dt.date >= inicial) & (df["DATA"].dt.date <= final)
+        df = df.loc[mascara]
+    else:
+        df = df.copy()
 
 # =========================================
 # COLORINDO O DATAFRAME
