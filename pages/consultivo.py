@@ -139,6 +139,22 @@ if "Monitor" in df.columns:
     )
     df = df[df["Monitor"].isin(monitores_selecionados)]
 
+# FILTRO Data
+if "DATA" in df.columns:
+    df["DATA"] = pd.to_datetime(df["DATA"])
+    
+    data_minima = df["DATA"].min().date()
+    data_maxima = df["DATA"].max().date()
+    
+    data_selecionada = st.sidebar.date_input(
+        "Escolha uma data:",
+        value=datetime.date.today() - datetime.timedelta(days=1),    # Começa no dia de hoje
+        min_value=data_minima,                                       # Limita a data mínima do arquivo
+        max_value=data_maxima,                                       # Limita a data máxima do arquivo
+        format="DD/MM/YYYY"                                          # Padrão brasileiro
+    )
+    df = df[df["DATA"].dt.date == data_selecionada]
+
 # =========================================
 # COLORINDO O DATAFRAME
 # =========================================
